@@ -1,4 +1,6 @@
-package vg.civcraft.mc.citadel.command.commands;
+if (state.isBypassMode()) {
+			state.toggleBypassMode();
+		}package vg.civcraft.mc.citadel.command.commands;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -32,6 +34,9 @@ public class Off extends PlayerCommand{
 		state.reset();
 		if (state.isBypassMode()) {
 			state.toggleBypassMode();
+		}
+		if (state.getEasyMode()) { //TODO: Reconcile easy mode and bypass mode getter names
+			state.toggleEasyMode();
 		}
 		Utility.sendAndLog(p, ChatColor.GREEN, "Reinforcement mode has been set to Normal.");
 		return true;
