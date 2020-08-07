@@ -12,7 +12,8 @@ public class CitadelPermissionHandler {
 	private CitadelPermissionHandler() {
 	}
 
-	private static PermissionType chestPerm;
+	private static PermissionType chestOpenPerm;
+	private static PermissionType chestWithdrawPerm;
 	private static PermissionType bypassPerm;
 	private static PermissionType cropsPerm;
 	private static PermissionType insecurePerm;
@@ -43,8 +44,11 @@ public class CitadelPermissionHandler {
 				"Allows repairing reinforcements reinforced on this group");
 		doorPerm = PermissionType.registerPermission("DOORS", new ArrayList<>(membersAndAbove),
 				"Allows opening doors reinforced on this group");
-		chestPerm = PermissionType.registerPermission("CHESTS", new ArrayList<>(membersAndAbove),
-				"Allows opening containers like chests reinforced on this group");
+		chestOpenPerm = PermissionType.registerPermission("CHEST_OPEN", new ArrayList<>(membersAndAbove),
+				"Allows opening containers reinforced on this group yet does not allow " +
+						"moving items inside reinforced containers");
+		chestWithdrawPerm = PermissionType.registerPermission("CHEST_WITHDRAW", new ArrayList<>(membersAndAbove),
+				"Allows moving items to and from already open containers reinforced on this group");
 		cropsPerm = PermissionType.registerPermission("CROPS", new ArrayList<>(membersAndAbove),
 				"Allows harvesting crops growing on soil reinforced on this group");
 		insecurePerm = PermissionType.registerPermission("INSECURE_REINFORCEMENT", new ArrayList<>(membersAndAbove),
@@ -54,19 +58,23 @@ public class CitadelPermissionHandler {
 		beaconPerm = PermissionType.registerPermission("BEACONS", new ArrayList<>(membersAndAbove),
 				"Allow changing beacon effects");
 		hangingPlaceBreak = PermissionType.registerPermission("HANGING_PLACE_BREAK", new ArrayList<>(membersAndAbove),
-				"Allows placing/breaking hanging entities on reinforced blocks.");
+				"Allows placing/breaking hanging entities on reinforced blocks");
 		itemFramePutTake = PermissionType.registerPermission("ITEM_FRAME_PUT_TAKE", new ArrayList<>(membersAndAbove),
-				"Allows the placing/removal of items into/from Item Frames.");
+				"Allows the placing/removal of items into/from Item Frames");
 		itemFrameRotate = PermissionType.registerPermission("ITEM_FRAME_ROTATE", new ArrayList<>(membersAndAbove),
-				"Allows the rotation of items placed within Item Frames.");
+				"Allows the rotation of items placed within Item Frames");
 	}
-	
+
 	public static PermissionType getModifyBlocks() {
 		return modifyBlockPerm;
 	}
 
-	public static PermissionType getChests() {
-		return chestPerm;
+	public static PermissionType getChestOpen() {
+		return chestOpenPerm;
+	}
+
+	public static PermissionType getChestWithdraw() {
+		return chestWithdrawPerm;
 	}
 
 	public static PermissionType getDoors() {

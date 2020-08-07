@@ -244,7 +244,7 @@ public final class ReinforcementLogic {
 			if (rein == null || rein.isInsecure()) {
 				return false;
 			}
-			return !rein.hasPermission(player, CitadelPermissionHandler.getChests());
+			return !rein.hasPermission(player, CitadelPermissionHandler.getChestWithdraw());
 		}
 		return false;
 	}

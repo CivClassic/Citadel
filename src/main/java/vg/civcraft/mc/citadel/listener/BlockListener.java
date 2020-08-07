@@ -184,7 +184,7 @@ public class BlockListener implements Listener {
 			return;
 		}
 		if (e.getClickedBlock().getState() instanceof Container) {
-			if (!rein.hasPermission(e.getPlayer(), CitadelPermissionHandler.getChests())) {
+			if (!rein.hasPermission(e.getPlayer(), CitadelPermissionHandler.getChestOpen())) {
 				e.setCancelled(true);
 				String msg = String.format("%s is locked with %s%s", e.getClickedBlock().getType().name(),
 						ChatColor.AQUA, rein.getType().getName());

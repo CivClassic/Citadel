@@ -1,19 +1,28 @@
 package vg.civcraft.mc.citadel.listener;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.DoubleChest;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import vg.civcraft.mc.citadel.CitadelPermissionHandler;
 import vg.civcraft.mc.citadel.ReinforcementLogic;
 import vg.civcraft.mc.citadel.model.Reinforcement;
 import vg.civcraft.mc.civmodcore.api.WorldAPI;
+
+import java.util.Objects;
 
 public class InventoryListener implements Listener {
 
@@ -125,6 +134,52 @@ public class InventoryListener implements Listener {
 		int xShif = location.getBlockX() & 15;
 		int zShif = location.getBlockZ() & 15;
 		return xShif == 0 || xShif == 15 || zShif == 0 || zShif == 15;
+	}
+
+	@EventHandler
+	public void onInventoryOpen(InventoryOpenEvent event) {
+		if (isInventoryWithdrawalBlocked(event)) {
+			event.getPlayer().sendMessage(ChatColor.RED + "This container is locked. You lack the permission to move items ("
+					+ CitadelPermissionHandler.getChestWithdraw().getName() + ")");
+		}
+	}
+
+	@EventHandler
+	public void onInventoryClick(InventoryClickEvent event) {
+		if (isInventoryWithdrawalBlocked(event)) {
+			event.setCancelled(true);
+		}
+	}
+
+	public boolean isInventoryWithdrawalBlocked(InventoryEvent event) {
+		Inventory inv = event.getInventory();
+		InventoryHolder holder = inv.getHolder();
+		Block block;
+		Player player;
+		if (holder instanceof Player) {
+			holder = event.getView().getTopInventory().getHolder();
+		}
+		if (holder instanceof Container) {
+			Container container = (Container) holder;
+			block = container.getBlock();
+		} else if (holder instanceof DoubleChest) {
+			DoubleChest doubleChest = (DoubleChest) holder;
+			block =  Objects.requireNonNull((Chest) doubleChest.getLeftSide()).getBlock();
+		} else {
+			return false;
+		}
+		Reinforcement rein = ReinforcementLogic.getReinforcementProtecting(block);
+		if (rein == null) {
+			return false;
+		}
+		if (event instanceof InventoryOpenEvent) {
+			player = (Player) ((InventoryOpenEvent) event).getPlayer();
+		} else if (event instanceof InventoryClickEvent) {
+			player = (Player) ((InventoryClickEvent) event).getWhoClicked();
+		} else {
+			return false;
+		}
+		return !rein.hasPermission(player, CitadelPermissionHandler.getChestWithdraw());
 	}
 
 }
