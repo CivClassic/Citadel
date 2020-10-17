@@ -55,6 +55,11 @@ public class HologramManager {
 			holo = new PlayerHolo(player, rein);
 			locationSpecificHolos.put(player.getUniqueId(), holo);
 		}
+
+		if(holo.reinforcement.getHealth() <= 0.0) {
+			holo.reinforcement = rein;
+		}
+
 		activeHolos.add(holo);
 		holo.show();
 	}
