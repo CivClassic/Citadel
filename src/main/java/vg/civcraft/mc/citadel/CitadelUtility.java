@@ -1,12 +1,10 @@
 package vg.civcraft.mc.citadel;
 
 import java.util.logging.Level;
-
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
 import vg.civcraft.mc.citadel.model.Reinforcement;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
 import vg.civcraft.mc.civmodcore.itemHandling.ItemMap;
@@ -49,12 +47,20 @@ public class CitadelUtility {
 			case PUMPKIN_STEM:
 			case ATTACHED_MELON_STEM:
 			case ATTACHED_PUMPKIN_STEM:
-			case NETHER_WART_BLOCK:
+			case NETHER_WART:
 			case SUGAR_CANE:
 			case CACTUS:
 			case SUNFLOWER:
 			case LILAC:
 			case PEONY:
+			case TALL_GRASS:
+			case GRASS:
+			case TWISTING_VINES:
+			case TWISTING_VINES_PLANT:
+			case WEEPING_VINES:
+			case WEEPING_VINES_PLANT:
+			case KELP:
+			case KELP_PLANT:
 				return true;
 			default:
 				return false;

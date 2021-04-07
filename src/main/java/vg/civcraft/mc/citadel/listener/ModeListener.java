@@ -3,7 +3,6 @@ package vg.civcraft.mc.citadel.listener;
 import java.text.DecimalFormat;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;

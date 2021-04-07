@@ -1,9 +1,9 @@
 package vg.civcraft.mc.citadel;
 
 import java.util.Objects;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Bed;
@@ -16,7 +16,7 @@ import vg.civcraft.mc.citadel.events.ReinforcementCreationEvent;
 import vg.civcraft.mc.citadel.events.ReinforcementDestructionEvent;
 import vg.civcraft.mc.citadel.model.Reinforcement;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
-import vg.civcraft.mc.civmodcore.api.BlockAPI;
+import vg.civcraft.mc.civmodcore.world.WorldUtils;
 import vg.civcraft.mc.namelayer.group.Group;
 
 public final class ReinforcementLogic {
@@ -96,7 +96,7 @@ public final class ReinforcementLogic {
 	}
 
 	public static Reinforcement getReinforcementProtecting(Block block) {
-		if (!BlockAPI.isValidBlock(block)) {
+		if (!WorldUtils.isValidBlock(block)) {
 			return null;
 		}
 		Reinforcement reinforcement = getReinforcementAt(block.getLocation());
@@ -117,11 +117,11 @@ public final class ReinforcementLogic {
 				BlockFace facing = chest.getFacing();
 				switch (chest.getType()) {
 					case LEFT: {
-						BlockFace face = BlockAPI.turnClockwise(facing);
+						BlockFace face = WorldUtils.turnClockwise(facing);
 						return getReinforcementAt(block.getLocation().add(face.getDirection()));
 					}
 					case RIGHT: {
-						BlockFace face = BlockAPI.turnAntiClockwise(facing);
+						BlockFace face = WorldUtils.turnAntiClockwise(facing);
 						return getReinforcementAt(block.getLocation().add(face.getDirection()));
 					}
 					default: {
@@ -172,7 +172,6 @@ public final class ReinforcementLogic {
 			case WARPED_FUNGUS:
 			case CRIMSON_FUNGUS:
 			case BAMBOO_SAPLING:
-			case TWISTING_VINES:
 			case WHEAT:
 			case CARROTS:
 			case POTATOES:
@@ -213,8 +212,16 @@ public final class ReinforcementLogic {
 			case DEAD_FIRE_CORAL_FAN:
 			case DEAD_HORN_CORAL:
 			case DEAD_HORN_CORAL_FAN:
-			case NETHER_WART_BLOCK: {
+			case NETHER_WART: {
 				return block.getRelative(BlockFace.DOWN);
+			}
+			case TWISTING_VINES: {
+				// scan downwards for first different block
+				Block below = block.getRelative(BlockFace.DOWN);
+				while (below.getType() == block.getType() || below.getType() == Material.TWISTING_VINES_PLANT) {
+					below = below.getRelative(BlockFace.DOWN);
+				}
+				return below;
 			}
 			case SUGAR_CANE:
 			case BAMBOO:
@@ -241,6 +248,8 @@ public final class ReinforcementLogic {
 			case IRON_DOOR:
 			case SPRUCE_DOOR:
 			case JUNGLE_DOOR:
+			case WARPED_DOOR:
+			case CRIMSON_DOOR:
 			case OAK_DOOR: {
 				if (block.getRelative(BlockFace.UP).getType() != block.getType()) {
 					// block is upper half of a door
@@ -284,7 +293,12 @@ public final class ReinforcementLogic {
 				return block.getRelative(cwf.getFacing().getOppositeFace());
 			}
 			case WEEPING_VINES: {
-				block.getRelative(BlockFace.UP);
+				// scan upwards
+				Block above = block.getRelative(BlockFace.UP);
+				while (above.getType() == block.getType() || above.getType() == Material.WEEPING_VINES_PLANT) {
+					above = above.getRelative(BlockFace.UP);
+				}
+				return above;
 			}
 			case WEEPING_VINES_PLANT: {
 				// scan upwards
