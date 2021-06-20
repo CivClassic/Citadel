@@ -13,6 +13,8 @@ import vg.civcraft.mc.citadel.CitadelUtility;
 import vg.civcraft.mc.citadel.ReinforcementLogic;
 import vg.civcraft.mc.citadel.listener.ModeListener;
 import vg.civcraft.mc.citadel.reinforcementtypes.ReinforcementType;
+import vg.civcraft.mc.civmodcore.ratelimiting.RateLimiter;
+import vg.civcraft.mc.civmodcore.ratelimiting.RateLimiting;
 import vg.civcraft.mc.civmodcore.playersettings.PlayerSettingAPI;
 import vg.civcraft.mc.civmodcore.playersettings.gui.MenuSection;
 import vg.civcraft.mc.civmodcore.playersettings.impl.BooleanSetting;
@@ -34,6 +36,11 @@ public class CitadelSettingManager {
 	private BooleanSetting ctoDisableCtb;
 
 	private BoundedIntegerSetting hologramDuration;
+	private BoundedIntegerSetting ctiXdist;
+	private BoundedIntegerSetting ctiYdist;
+	private BoundedIntegerSetting ctiZdist;
+
+	private RateLimiter rateLimiter;
 
 	private CommandReplySetting ctiNotReinforced;
 	// private CommandReplySetting ctiAllied;
@@ -95,9 +102,17 @@ public class CitadelSettingManager {
 		return easyMode.getValue(uuid);
 	}
 
+	public int ctiXdist(UUID uuid) { return ctiXdist.getValue(uuid); }
+
+	public int ctiYdist(UUID uuid) { return ctiYdist.getValue(uuid); }
+
+	public int ctiZdist(UUID uuid) { return ctiZdist.getValue(uuid); }
+
 	public int getHologramDuration(UUID uuid) {
 		return hologramDuration.getValue(uuid);
 	}
+
+	public RateLimiter getRateLimiter() { return rateLimiter; }
 
 	void initSettings() {
 		MenuSection menu = PlayerSettingAPI.getMainMenu().createMenuSection("Citadel",
@@ -127,6 +142,24 @@ public class CitadelSettingManager {
 				"How long should holograms in information mode remain visible, measured in milli seconds", false, 1000,
 				30000);
 		PlayerSettingAPI.registerSetting(hologramDuration, menu);
+
+		ctiXdist = new BoundedIntegerSetting(Citadel.getInstance(), 0, "cti X distance",
+				"citadelCtiXdist", new ItemStack(Material.RED_BANNER),
+				"How far out from block clicked should cti holograms extend", false, 0,
+				2);
+		PlayerSettingAPI.registerSetting(ctiXdist, menu);
+
+		ctiYdist = new BoundedIntegerSetting(Citadel.getInstance(), 0, "cti Y distance",
+				"citadelCtiYdist", new ItemStack(Material.GREEN_BANNER),
+				"How far out from block clicked should cti holograms extend", false, 0,
+				2);
+		PlayerSettingAPI.registerSetting(ctiYdist, menu);
+
+		ctiZdist = new BoundedIntegerSetting(Citadel.getInstance(), 0, "cti Z distance",
+				"citadelCtiZdist", new ItemStack(Material.BLUE_BANNER),
+				"How far out from block clicked should cti holograms extend", false, 0,
+				2);
+		PlayerSettingAPI.registerSetting(ctiZdist, menu);
 		
 		ctbLocationSetting = new DisplayLocationSetting(Citadel.getInstance(), DisplayLocation.NONE, "Bypass display location"
 				, "citadelBypassDisplayLocation", new ItemStack(Material.GOLDEN_PICKAXE), "bypass");
@@ -191,6 +224,8 @@ public class CitadelSettingManager {
 				"a color representing the reinforcement health");
 		ctiEnemy.registerArgument("decay_string", "", "the decay of the reinforcement");
 		PlayerSettingAPI.registerSetting(ctiEnemy, commandSection);
+
+		rateLimiter = RateLimiting.createRateLimiter("cti_raytrace" , 6, 6, 1,  2000);
 	}
 
 	public void sendCtiEnemyMessage(Player player, Reinforcement reinforcement) {

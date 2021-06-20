@@ -6,6 +6,9 @@ import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.util.Vector;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,6 +17,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.util.RayTraceResult;
+
 import vg.civcraft.mc.citadel.Citadel;
 import vg.civcraft.mc.citadel.CitadelPermissionHandler;
 import vg.civcraft.mc.citadel.CitadelUtility;
@@ -28,6 +33,7 @@ import vg.civcraft.mc.citadel.playerstate.PlayerStateManager;
 import vg.civcraft.mc.civmodcore.playersettings.PlayerSetting;
 import vg.civcraft.mc.civmodcore.playersettings.SettingChangeListener;
 import vg.civcraft.mc.civmodcore.playersettings.impl.DisplayLocationSetting;
+import vg.civcraft.mc.civmodcore.ratelimiting.RateLimiter;
 import vg.civcraft.mc.civmodcore.scoreboard.bottom.BottomLine;
 import vg.civcraft.mc.civmodcore.scoreboard.bottom.BottomLineAPI;
 import vg.civcraft.mc.civmodcore.scoreboard.side.CivScoreBoard;
@@ -198,60 +204,89 @@ public class ModeListener implements Listener {
 		if (!settingMan.getInformationMode().getValue(e.getPlayer())) {
 			return;
 		}
-		Reinforcement rein = ReinforcementLogic.getReinforcementProtecting(e.getClickedBlock());
 		Player player = e.getPlayer();
-		boolean showChat = settingMan.shouldShowChatInCti(player.getUniqueId());
-		if (rein == null) {
-			if (showChat) {
-				CitadelUtility.sendAndLog(e.getPlayer(), ChatColor.YELLOW, "Not reinforced");
-			}
-			return;
-		}
-		if (player.getGameMode() == GameMode.CREATIVE && e.getAction() == Action.LEFT_CLICK_BLOCK) {
-			e.setCancelled(true);
-		}
+		Location playerLoc = player.getEyeLocation();
+
+		RateLimiter raytrace_rateLimiter = settingMan.getRateLimiter();
+		boolean isRateLimited = !raytrace_rateLimiter.pullToken(player);
 		boolean showHolo = settingMan.shouldShowHologramInCti(player.getUniqueId());
-		if (!rein.hasPermission(player, CitadelPermissionHandler.getInfo())) {
-			if (showChat) {
-				Citadel.getInstance().getSettingManager().sendCtiEnemyMessage(player, rein);
-			}
-			if (showHolo) {
-				showHolo(rein, player);
-			}
-			return;
-		}
-		if (showChat) {
-			StringBuilder sb = new StringBuilder();
-			sb.append(String.format("Reinforced at %s%s health with %s%s %son %s%s ", formatHealth(rein),
-					ChatColor.GREEN, ChatColor.AQUA, rein.getType().getName(), ChatColor.GREEN, ChatColor.LIGHT_PURPLE,
-					rein.getGroup().getName()));
-			if (!rein.isMature()) {
-				sb.append(ChatColor.GOLD);
-				sb.append(formatProgress(rein.getCreationTime(), rein.getType().getMaturationTime(), "mature"));
-				sb.append(" ");
-			}
-			if (rein.isInsecure()) {
-				sb.append(ChatColor.AQUA);
-				sb.append("(Insecure) ");
-			}
-			if (ReinforcementLogic.getDecayDamage(rein) != 1) {
-				String ctiDecayAmountFormat = commaFormat.format(ReinforcementLogic.getDecayDamage(rein));
-				sb.append(String.format("%s(Decayed x%s) ", ChatColor.LIGHT_PURPLE, ctiDecayAmountFormat));
-			}
-			AcidManager acidMan = Citadel.getInstance().getAcidManager();
-			if (acidMan.isPossibleAcidBlock(e.getClickedBlock())) {
-				sb.append(ChatColor.GOLD);
-				long remainingTime = acidMan.getRemainingAcidMaturationTime(rein);
-				if (remainingTime == 0) {
-					sb.append("Acid ready");
-				} else {
-					sb.append(String.format("%sAcid block mature in %s", ChatColor.YELLOW, TextUtil.formatDuration(remainingTime, TimeUnit.MILLISECONDS)));
+		int xdist = settingMan.ctiXdist(player.getUniqueId());
+		int ydist = settingMan.ctiYdist(player.getUniqueId());
+		int zdist = settingMan.ctiZdist(player.getUniqueId());
+
+		for (int x = -xdist; x <=xdist; x++) {
+			for (int y = -ydist; y <=ydist; y++) {
+				for (int z = -zdist; z <=zdist; z++) {
+					final Block block = e.getClickedBlock().getRelative(x,y,z);
+					if (x == 0 && y == 0 && z == 0) {
+						final Reinforcement rein = ReinforcementLogic.getReinforcementProtecting(block);
+						boolean showChat = settingMan.shouldShowChatInCti(player.getUniqueId());
+						if (rein == null) {
+							if (showChat) {
+								CitadelUtility.sendAndLog(e.getPlayer(), ChatColor.YELLOW, "Not reinforced");
+							}
+							continue;
+						}
+						if (player.getGameMode() == GameMode.CREATIVE && e.getAction() == Action.LEFT_CLICK_BLOCK) {
+							e.setCancelled(true);
+						}
+						if (!rein.hasPermission(player, CitadelPermissionHandler.getInfo())) {
+							if (showChat) {
+								Citadel.getInstance().getSettingManager().sendCtiEnemyMessage(player, rein);
+							}
+							if (showHolo) {
+								showHolo(rein, player);
+							}
+							continue;
+						}
+						if (showChat) {
+							StringBuilder sb = new StringBuilder();
+							sb.append(String.format("Reinforced at %s%s health with %s%s %son %s%s ", formatHealth(rein),
+									ChatColor.GREEN, ChatColor.AQUA, rein.getType().getName(), ChatColor.GREEN, ChatColor.LIGHT_PURPLE,
+									rein.getGroup().getName()));
+							if (!rein.isMature()) {
+								sb.append(ChatColor.GOLD);
+								sb.append(formatProgress(rein.getCreationTime(), rein.getType().getMaturationTime(), "mature"));
+								sb.append(" ");
+							}
+							if (rein.isInsecure()) {
+								sb.append(ChatColor.AQUA);
+								sb.append("(Insecure) ");
+							}
+							if (ReinforcementLogic.getDecayDamage(rein) != 1) {
+								String ctiDecayAmountFormat = commaFormat.format(ReinforcementLogic.getDecayDamage(rein));
+								sb.append(String.format("%s(Decayed x%s) ", ChatColor.LIGHT_PURPLE, ctiDecayAmountFormat));
+							}
+							AcidManager acidMan = Citadel.getInstance().getAcidManager();
+							if (acidMan.isPossibleAcidBlock(block)) {
+								sb.append(ChatColor.GOLD);
+								long remainingTime = acidMan.getRemainingAcidMaturationTime(rein);
+								if (remainingTime == 0) {
+									sb.append("Acid ready");
+								} else {
+									sb.append(String.format("%sAcid block mature in %s", ChatColor.YELLOW, TextUtil.formatDuration(remainingTime, TimeUnit.MILLISECONDS)));
+								}
+							}
+							CitadelUtility.sendAndLog(player, ChatColor.GREEN, sb.toString().trim());
+						}
+						if (showHolo) {
+							showHolo(rein, player);
+						}
+					} else if (showHolo && !isRateLimited && block.isSolid()) {
+						Vector blockLoc = block.getLocation().toVector().add(new Vector(0.5, 0.5, 0.5));
+						Vector direction = blockLoc.clone().subtract(playerLoc.toVector());
+						direction.normalize();
+
+						RayTraceResult ray = player.getWorld().rayTraceBlocks(playerLoc, direction, blockLoc.distance(playerLoc.toVector()));
+						if (ray != null && ray.getHitBlock() != null && ray.getHitBlock().equals(block)) {
+							Reinforcement rein = ReinforcementLogic.getReinforcementProtecting(block);
+							if (rein != null) {
+								showHolo(rein, player);
+							}
+						}
+					}
 				}
 			}
-			CitadelUtility.sendAndLog(player, ChatColor.GREEN, sb.toString().trim());
-		}
-		if (showHolo) {
-			showHolo(rein, player);
 		}
 	}
 
